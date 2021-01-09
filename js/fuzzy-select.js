@@ -6,7 +6,8 @@ class FuzzyRegExp {
     }
 
     buildRegExp() {
-        this.re = new RegExp( `(?<skipHead>.*)(?<match>${this.query})(?<skipTail>.*)`, "i");
+        let escaped = this.query.replace(".", "\\.");
+        this.re = new RegExp( `(?<skipHead>.*)(?<match>${escaped})(?<skipTail>.*)`, "i");
     }
 
     buildFuzzyRegExp() {
@@ -19,6 +20,37 @@ class FuzzyRegExp {
         });
         tokens.push("(?<skipTail>.*)");
         this.fuzzyRe = new RegExp(tokens.join(""), "i");
+    }
+
+    exactMatch(s) {
+        let ret = { };
+        let m = this.re.exec(s);
+        if (!m) ret.match = false;
+        else {
+            ret.match = true;
+            ret.coherent = true;
+            ret.groups = [];
+            let i = 0;
+            for (let k in m.groups) {
+                if (k.startsWith("skip")) {
+                    if (m.groups[k]) ret.groups.push({
+                        match: false,
+                        start: i,
+                        end: i + m.groups[k].length,
+                        value: m.groups[k]
+                    });
+                } else {
+                    ret.groups.push({
+                        match: true,
+                        start: i,
+                        end: i + m.groups[k].length,
+                        value: m.groups[k]
+                    });
+                }
+                i += m.groups[k].length;
+            }
+        }
+        return ret;
     }
 
     fuzzyMatch(s) {
@@ -66,22 +98,26 @@ class FuzzyRegExp {
 
 
 class FuzzySelect {
-    constructor(inputElement, outputElement, catalog, placeholder) {
+    constructor(inputElement, outputElement, data, sieve, placeholder) {
         this.input = inputElement;
         this.input.setAttribute("placeholder", placeholder);
 
         // initialize list of matches
         this.output = outputElement;
-        this.catalog = catalog;
+        this.data = data;
+
+        /* sieve must be a function that generates a list of DOM list elements from the data
+         * attached to the select box and the current user query. */
+        this.sieve = sieve;
 
         this.highlighted = null;
 
         // each time the input changes, refresh list of matches
-        this.input.addEventListener("input", e => { this.fuzzyFind(e.target.value); });
+        this.input.addEventListener("input", e => { this.update(); });
 
         // when we get focus, update the list of matches
         this.input.addEventListener("focusin", e => {
-            this.appendOutput(this.catalog);
+            this.appendOutput(this.data);
             for (const li of this.output.children) {
                 if (li.textContent === this.input.value) {
                     this.highlight(li);
@@ -96,7 +132,7 @@ class FuzzySelect {
         this.input.addEventListener("focusout", e => {
             if (this.highlighted) {
                 this.input.value = this.highlighted.textContent;
-            } else if (!this.catalog.includes(this.input.value)) {
+            } else {
                 this.input.value = "";
             }
             this.clearOutput();
@@ -116,6 +152,16 @@ class FuzzySelect {
                     this.confirm();
             }
         });
+    }
+
+    update() {
+        this.clearOutput();
+        for (const li of this.sieve(this.data, this.input.value)) {
+            li.addEventListener("mouseenter", e => {
+                this.highlight(e.target);
+            });
+            this.output.appendChild(li);
+        }
     }
 
     confirm() {
@@ -151,35 +197,6 @@ class FuzzySelect {
 
     highlightPrevious() {
         this.highlight(this.highlighted.previousSibling || this.output.lastChild);
-    }
-
-    fuzzyFind(query) {
-        let re = new FuzzyRegExp(query);
-
-        let coherentMatches = [];
-        let otherMatches = [];
-
-        for (const item of catalog) {
-            const m = re.fuzzyMatch(item);
-            if (m.match) {
-                let li = document.createElement("li");
-                for (const group of m.groups) {
-                    let span = document.createElement("span");
-                    if (group.match) {
-                        span.setAttribute("class", "fuzzy-select-inline-match");
-                    }
-                    span.textContent = group.value;
-                    li.appendChild(span);
-                }
-                if (m.coherent) coherentMatches.push(li);
-                else            otherMatches.push(li);
-            }
-
-            this.clearOutput();
-            this.appendOutput(coherentMatches);
-            this.appendOutput(otherMatches);
-            this.highlightFirst();
-        }
     }
 
     clearOutput() {
