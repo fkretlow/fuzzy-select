@@ -1,3 +1,76 @@
+body {
+  padding: 5rem;
+  font-family: sans-serif;
+}
+
+.fuzzy-select {
+  max-width: 400px;
+  margin: 0 auto;
+  border: none;
+  outline: none;
+  border-radius: 3px;
+  position: relative;
+  background-color: #eee;
+  font-size: .9em;
+  transition: background-color .5s ease;
+}
+
+.fuzzy-select:hover {
+  background-color: #ddd;
+}
+
+.fuzzy-select input {
+  background-color: transparent;
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 3px;
+  padding: .8em 1em;
+  cursor: pointer;
+}
+
+.fuzzy-select input:focus {
+  background-color: #293549;
+  border-radius: 3px 3px 0 0;
+  color: white;
+  transition: none;
+}
+
+.fuzzy-select input:focus::placeholder {
+  color: transparent;
+}
+
+.fuzzy-select input::selection {
+  color: white;
+  background-color: #3b4c68;
+}
+
+.fuzzy-select ul {
+  padding: 1em 0;
+  display: none;
+  position: absolute;
+  width: 100%;
+  color: white;
+  background-color: #516890;
+  border-radius: 0 0 3px 3px;
+}
+
+.fuzzy-select ul.fuzzy-select-shown {
+  transition-delay: 100ms;
+  transition-property: display;
+  display: block;
+}
+
+.fuzzy-select ul li {
+  padding: .3em 1em;
+  transition: background-color .1s ease;
+}
+
+li.fuzzy-select-highlight {
+  background-color: #3b4c68;
+  cursor: pointer;
+}
+
 .fuzzy-select-inline-match {
-  font-weight: bold;
+  color: #f37748;
 }

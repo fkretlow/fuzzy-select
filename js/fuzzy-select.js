@@ -2,9 +2,14 @@ class FuzzyRegExp {
     constructor(q) {
         this.query = q;
         this.buildRegExp();
+        this.buildFuzzyRegExp();
     }
 
     buildRegExp() {
+        this.re = new RegExp( `(?<skipHead>.*)(?<match>${this.query})(?<skipTail>.*)`, "i");
+    }
+
+    buildFuzzyRegExp() {
         let chars = this.query.split("");
         chars.forEach((c, i, A) => { if (c == ".") A[i] = "\\."; });
         let tokens = [ "(?<skipHead>.*)" ];
@@ -13,12 +18,13 @@ class FuzzyRegExp {
             if (i < chars.length - 1) tokens.push(`(?<skip${i}>.*)`);
         });
         tokens.push("(?<skipTail>.*)");
-        this.re = new RegExp(tokens.join(""), "i");
+        this.fuzzyRe = new RegExp(tokens.join(""), "i");
     }
 
     fuzzyMatch(s) {
         let ret = { };
         let m = this.re.exec(s);
+        if (!m) m = this.fuzzyRe.exec(s);
         if (!m) {
             ret.match = false;
         } else {
@@ -59,28 +65,101 @@ class FuzzyRegExp {
 }
 
 
-class FuzzySelectHandler {
-    constructor(input, output, catalog) {
-        this.input = input;
-        this.input.addEventListener("input", e => {
-            this.fuzzyFind(e.target.value);
+class FuzzySelect {
+    constructor(inputElement, outputElement, catalog, placeholder) {
+        this.input = inputElement;
+        this.input.setAttribute("placeholder", placeholder);
+
+        // initialize list of matches
+        this.output = outputElement;
+        this.catalog = catalog;
+
+        this.highlighted = null;
+
+        // each time the input changes, refresh list of matches
+        this.input.addEventListener("input", e => { this.fuzzyFind(e.target.value); });
+
+        // when we get focus, update the list of matches
+        this.input.addEventListener("focusin", e => {
+            this.appendOutput(this.catalog);
+            for (const li of this.output.children) {
+                if (li.textContent === this.input.value) {
+                    this.highlight(li);
+                    break;
+                }
+            }
+            this.input.value = "";
+            this.output.classList.toggle("fuzzy-select-shown");
         });
 
-        this.output = output;
-        this.catalog = catalog;
+        // when we lose focus, only keep valid inputs
+        this.input.addEventListener("focusout", e => {
+            if (this.highlighted) {
+                this.input.value = this.highlighted.textContent;
+            } else if (!this.catalog.includes(this.input.value)) {
+                this.input.value = "";
+            }
+            this.clearOutput();
+            this.output.classList.toggle("fuzzy-select-shown");
+        });
+
+        // handle special keys
+        this.input.addEventListener("keyup", e => {
+            switch (e.code) {
+                case "ArrowDown":
+                    this.highlightNext();
+                    break;
+                case "ArrowUp":
+                    this.highlightPrevious();
+                    break;
+                case "Enter":
+                    this.confirm();
+            }
+        });
+    }
+
+    confirm() {
+        if (this.highlighted) {
+            this.input.value = this.highlighted.textContent;
+            this.input.blur();
+        }
+    }
+
+    highlight(li) {
+        if (this.highlighted) {
+            this.highlighted.classList.toggle("fuzzy-select-highlight");
+        }
+        if (li) {
+            this.highlighted = li;
+            this.highlighted.classList.toggle("fuzzy-select-highlight");
+        } else {
+            this.highlighted = null;
+        }
+    }
+
+    highlightFirst() {
+        this.highlight(this.output.firstChild);
+    }
+
+    highlightNext() {
+        if (this.highlighted) {
+            this.highlight(this.highlighted.nextSibling || this.output.firstChild);
+        } else {
+            this.highlight(this.output.firstChild);
+        }
+    }
+
+    highlightPrevious() {
+        this.highlight(this.highlighted.previousSibling || this.output.lastChild);
     }
 
     fuzzyFind(query) {
         let re = new FuzzyRegExp(query);
 
-        this.output.textContent = "";
-
         let coherentMatches = [];
         let otherMatches = [];
 
         for (const item of catalog) {
-            /* TODO: matches that contain the user query in one piece should always appear at the
-             * top of the list. */
             const m = re.fuzzyMatch(item);
             if (m.match) {
                 let li = document.createElement("li");
@@ -92,16 +171,34 @@ class FuzzySelectHandler {
                     span.textContent = group.value;
                     li.appendChild(span);
                 }
-                console.log(`m.coherent: ${m.coherent}`);
                 if (m.coherent) coherentMatches.push(li);
                 else            otherMatches.push(li);
             }
-            for (const li of coherentMatches) {
-                this.output.appendChild(li);
+
+            this.clearOutput();
+            this.appendOutput(coherentMatches);
+            this.appendOutput(otherMatches);
+            this.highlightFirst();
+        }
+    }
+
+    clearOutput() {
+        this.output.textContent = "";
+    }
+
+    appendOutput(items) {
+        for (const item of items) {
+            let li;
+            if (typeof(item) === "string") {
+                li = document.createElement("li");
+                li.textContent = item;
+            } else {
+                li = item;
             }
-            for (const li of otherMatches) {
-                this.output.appendChild(li);
-            }
+            li.addEventListener("mouseenter", e => {
+                this.highlight(e.target);
+            });
+            this.output.appendChild(li);
         }
     }
 }

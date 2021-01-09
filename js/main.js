@@ -5,5 +5,5 @@ const catalog = [
 window.addEventListener("load", e => {
     const input = document.querySelector("#select-input");
     const output = document.querySelector("#select-output");
-    const handler = new FuzzySelectHandler(input, output, catalog);
+    const handler = new FuzzySelect(input, output, catalog, "Lieblingsding");
 });

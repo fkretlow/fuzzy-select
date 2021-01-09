@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fuzzy Select PoC</title>
+    <link rel="stylesheet" href="css/minireset.min.css">
     <link rel="stylesheet" href="css/main.css">
     <script src="js/fuzzy-select.js"></script>
     <script src="js/main.js"></script>
   </head>
   <body>
-    <form action="">
-      <input type="text" class="fuzzy-select" id="select-input">
-    </form>
-    <ul id="select-output">
-      <li id="li-nothing">Nothing to show</li>
-    </ul>
+    <div class="fuzzy-select">
+      <input type="text" autocomplete="off" class="fuzzy-select-input" id="select-input">
+      <ul id="select-output">
+      </ul>
+    </div>
 
   </body>
 </html>
