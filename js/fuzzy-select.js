@@ -8,16 +8,16 @@ class FuzzyRegExp {
 
     static buildExactRe(query) {
         let escaped = query.replace(".", "\\.");
-        return new RegExp( `(?<skipHead>.*)(?<match>${escaped})(?<skipTail>.*)`, "i");
+        return new RegExp( `(?<skipHead>.*?)(?<match>${escaped})(?<skipTail>.*)`, "i");
     }
 
     static buildMultiRe(query) {
         if (!query.includes(" ")) return null;
         let words = query.replace(".", "\\.").split(" ");
-        let tokens = [ "(?<skipHead>.*)" ];
+        let tokens = [ "(?<skipHead>.*?)" ];
         for (let i = 0; i < words.length; ++i) {
             tokens.push(`(?<match${i}>${words[i]})`);
-            if (i < words.length - 1) tokens.push(`(?<skip${i}>.*)`);
+            if (i < words.length - 1) tokens.push(`(?<skip${i}>.*?)`);
         }
         tokens.push("(?<skipTail>.*)");
         return new RegExp(tokens.join(""), "i");
@@ -26,10 +26,10 @@ class FuzzyRegExp {
     static buildFuzzyRe(query) {
         let chars = query.split("");
         chars.forEach((c, i, A) => { if (c == ".") A[i] = "\\."; });
-        let tokens = [ "(?<skipHead>.*)" ];
+        let tokens = [ "(?<skipHead>.*?)" ];
         for (let i = 0; i < chars.length; ++i) {
             tokens.push(`(?<match${i}>${chars[i]})`);
-            if (i < chars.length - 1) tokens.push(`(?<skip${i}>.*)`);
+            if (i < chars.length - 1) tokens.push(`(?<skip${i}>.*?)`);
         }
         tokens.push("(?<skipTail>.*)");
         return new RegExp(tokens.join(""), "i");
@@ -61,7 +61,6 @@ class FuzzyRegExp {
                 if (group) ret.groups.push({
                     match: false,
                     start: i,
-                    end: i + group.length,
                     value: group
                 });
             } else {
@@ -72,7 +71,6 @@ class FuzzyRegExp {
                     ret.groups.push({
                         match: true,
                         start: i,
-                        end: i + group.length,
                         value: group
                     });
                 }
@@ -153,6 +151,7 @@ class FuzzySelect {
             });
             this.output.appendChild(li);
         }
+        this.highlightFirst();
     }
 
     confirm() {

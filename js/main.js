@@ -1,40 +1,40 @@
 function* fuzzySieve(data, query) {
+    const makeListElement = match => {
+        let li = document.createElement("li");
+        for (const group of match.groups) {
+            let span = document.createElement("span");
+            if (group.match) span.classList.add("fuzzy-select-inline-match");
+            span.textContent = group.value;
+            li.appendChild(span);
+        }
+        return li;
+    };
+
     re = new FuzzyRegExp(query);
-    let multiMatches = [];
-    let fuzzyMatches = [];
-    let count = 0;
+    let nonExactMatches = [];
 
     for (const item of data) {
-        const m = re.exec(item);
-        if (m.match) {
-            let li = document.createElement("li");
-            for (const group of m.groups) {
-                let span = document.createElement("span");
-                if (group.match) {
-                    span.setAttribute("class", "fuzzy-select-inline-match");
-                }
-                span.textContent = group.value;
-                li.appendChild(span);
-            }
-            switch (m.type) {
-                case "exact":
-                    yield li; ++count; break;
-                case "multi":
-                    multiMatches.push(li); break;
-                default:
-                    fuzzyMatches.push(li);
+        const match = re.exec(item);
+        if (match.match === true) {
+            /* Yield exact matches immediately. */
+            if (match.type === "exact") yield makeListElement(match);
+            /* Only save moderately fuzzy matches for later yielding, the average length of
+             * matched substrings being a measure of fuziness. 1.5 is arbitrary. */
+            else if (match.groups.length < 4
+                || ((query.length
+                     / match.groups.reduce((count, group) => group.match ? count + 1 : count , 0))
+                    > 1.5))
+            {
+                nonExactMatches.push(match);
             }
         }
     }
 
-    for (let i = 0; i < multiMatches.length && count < 20; ++i) {
-        yield multiMatches[i];
-        ++count;
-    }
-
-    for (let i = 0; i < fuzzyMatches.length && count < 20; ++i) {
-        yield fuzzyMatches[i];
-        ++count;
+    /* Sort the remaining matches with respect to the number of groups, so those with longer
+     * match groups come first. */
+    nonExactMatches.sort((a, b) => a.groups.length - b.groups.length);
+    for (const match of nonExactMatches) {
+        yield makeListElement(match);
     }
 }
 

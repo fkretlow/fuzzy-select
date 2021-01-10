@@ -62,7 +62,7 @@ body {
 
 .fuzzy-select ul li {
   cursor: pointer;
-  padding: .3em 1em;
+  padding: .5em 1em;
   transition: background-color .1s ease;
 }
 
