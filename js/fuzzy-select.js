@@ -1,99 +1,90 @@
 class FuzzyRegExp {
-    constructor(q) {
-        this.query = q;
-        this.buildRegExp();
-        this.buildFuzzyRegExp();
+    constructor(query) {
+        this.query = query;
+        this.exactRe = FuzzyRegExp.buildExactRe(query);
+        this.multiRe = FuzzyRegExp.buildMultiRe(query);
+        this.fuzzyRe = FuzzyRegExp.buildFuzzyRe(query);
     }
 
-    buildRegExp() {
-        let escaped = this.query.replace(".", "\\.");
-        this.re = new RegExp( `(?<skipHead>.*)(?<match>${escaped})(?<skipTail>.*)`, "i");
+    static buildExactRe(query) {
+        let escaped = query.replace(".", "\\.");
+        return new RegExp( `(?<skipHead>.*)(?<match>${escaped})(?<skipTail>.*)`, "i");
     }
 
-    buildFuzzyRegExp() {
-        let chars = this.query.split("");
+    static buildMultiRe(query) {
+        if (!query.includes(" ")) return null;
+        let words = query.replace(".", "\\.").split(" ");
+        let tokens = [ "(?<skipHead>.*)" ];
+        for (let i = 0; i < words.length; ++i) {
+            tokens.push(`(?<match${i}>${words[i]})`);
+            if (i < words.length - 1) tokens.push(`(?<skip${i}>.*)`);
+        }
+        tokens.push("(?<skipTail>.*)");
+        return new RegExp(tokens.join(""), "i");
+    }
+
+    static buildFuzzyRe(query) {
+        let chars = query.split("");
         chars.forEach((c, i, A) => { if (c == ".") A[i] = "\\."; });
         let tokens = [ "(?<skipHead>.*)" ];
-        chars.forEach((c, i) => {
-            tokens.push(`(?<match${i}>${c})`);
+        for (let i = 0; i < chars.length; ++i) {
+            tokens.push(`(?<match${i}>${chars[i]})`);
             if (i < chars.length - 1) tokens.push(`(?<skip${i}>.*)`);
-        });
+        }
         tokens.push("(?<skipTail>.*)");
-        this.fuzzyRe = new RegExp(tokens.join(""), "i");
+        return new RegExp(tokens.join(""), "i");
     }
 
-    exactMatch(s) {
+    exec(s) {
         let ret = { };
-        let m = this.re.exec(s);
-        if (!m) ret.match = false;
-        else {
-            ret.match = true;
-            ret.coherent = true;
-            ret.groups = [];
-            let i = 0;
-            for (let k in m.groups) {
-                if (k.startsWith("skip")) {
-                    if (m.groups[k]) ret.groups.push({
-                        match: false,
-                        start: i,
-                        end: i + m.groups[k].length,
-                        value: m.groups[k]
-                    });
+
+        let m = this.exactRe.exec(s);
+        if (m) ret.type = "exact";
+
+        if (!m && this.multiRe) {
+            m = this.multiRe.exec(s);
+            if (m) ret.type = "multi";
+        }
+
+        if (!m) {
+            m = this.fuzzyRe.exec(s);
+            if (m) ret.type = "fuzzy";
+            else { ret.match = false; return ret; }
+        }
+
+        ret.match = true;
+        ret.groups = [];
+        let i = 0;
+        for (let k in m.groups) {
+            let group = m.groups[k];
+            if (k.startsWith("skip")) {
+                if (group) ret.groups.push({
+                    match: false,
+                    start: i,
+                    end: i + group.length,
+                    value: group
+                });
+            } else {
+                if (ret.groups.length > 0 && ret.groups[ret.groups.length-1].match) {
+                    ret.groups[ret.groups.length-1].value = ret.groups[ret.groups.length-1].value.concat(group);
+                    ret.groups[ret.groups.length-1].end += group.length;
                 } else {
                     ret.groups.push({
                         match: true,
                         start: i,
-                        end: i + m.groups[k].length,
-                        value: m.groups[k]
+                        end: i + group.length,
+                        value: group
                     });
                 }
-                i += m.groups[k].length;
             }
+            i += group.length;
+        }
+
+        if (ret.groups.reduce((acc, cur) => cur.match ? ++acc : acc, 0) === 1) {
+            ret.type = "exact";
         }
         return ret;
     }
-
-    fuzzyMatch(s) {
-        let ret = { };
-        let m = this.re.exec(s);
-        if (!m) m = this.fuzzyRe.exec(s);
-        if (!m) {
-            ret.match = false;
-        } else {
-            ret.match = true;
-            ret.groups = [];
-            let i = 0;
-            for (let k in m.groups) {
-                if (k.startsWith("skip")) {
-                    if (m.groups[k]) ret.groups.push({
-                        match: false,
-                        start: i,
-                        end: i + m.groups[k].length,
-                        value: m.groups[k]
-                    });
-                } else {
-                    if (ret.groups.length > 0 && ret.groups[ret.groups.length-1].match) {
-                        ret.groups[ret.groups.length-1].value = ret.groups[ret.groups.length-1].value.concat(m.groups[k]);
-                        ret.groups[ret.groups.length-1].end += m.groups[k].length;
-                    } else {
-                        ret.groups.push({
-                            match: true,
-                            start: i,
-                            end: i + m.groups[k].length,
-                            value: m.groups[k]
-                        });
-                    }
-                }
-                i += m.groups[k].length;
-            }
-            ret.coherent = ret.groups.reduce((acc, cur) => cur.match ? ++acc : acc, 0) === 1
-                ? true : false;
-        }
-        return ret;
-    }
-
-    exec(s) { return this.re.exec(s); }
-    test(s) { return this.re.test(s); }
 }
 
 

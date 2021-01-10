@@ -1,12 +1,12 @@
 function* fuzzySieve(data, query) {
     re = new FuzzyRegExp(query);
-    let matched = new Set();
+    let multiMatches = [];
+    let fuzzyMatches = [];
+    let count = 0;
 
-    // yield exact matches first
     for (const item of data) {
-        const m = re.exactMatch(item);
+        const m = re.exec(item);
         if (m.match) {
-            matched.add(item);
             let li = document.createElement("li");
             for (const group of m.groups) {
                 let span = document.createElement("span");
@@ -16,28 +16,25 @@ function* fuzzySieve(data, query) {
                 span.textContent = group.value;
                 li.appendChild(span);
             }
-            yield li;
+            switch (m.type) {
+                case "exact":
+                    yield li; ++count; break;
+                case "multi":
+                    multiMatches.push(li); break;
+                default:
+                    fuzzyMatches.push(li);
+            }
         }
     }
 
-    if (matched.size > 2) return;
+    for (let i = 0; i < multiMatches.length && count < 20; ++i) {
+        yield multiMatches[i];
+        ++count;
+    }
 
-    // and then match the rest "fuzzily"
-    for (const item of data) {
-        if (matched.has(item)) continue;
-        const m = re.fuzzyMatch(item);
-        if (m.match) {
-            let li = document.createElement("li");
-            for (const group of m.groups) {
-                let span = document.createElement("span");
-                if (group.match) {
-                    span.setAttribute("class", "fuzzy-select-inline-match");
-                }
-                span.textContent = group.value;
-                li.appendChild(span);
-            }
-            yield li;
-        }
+    for (let i = 0; i < fuzzyMatches.length && count < 20; ++i) {
+        yield fuzzyMatches[i];
+        ++count;
     }
 }
 
