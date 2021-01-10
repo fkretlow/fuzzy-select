@@ -3,28 +3,24 @@ function* fuzzySieve(data, query) {
         let li = document.createElement("li");
         for (const group of match.groups) {
             let span = document.createElement("span");
-            if (group.match) span.classList.add("fuzzy-select-inline-match");
+            if (group.match === true) span.classList.add("fuzzy-select-inline-match");
             span.textContent = group.value;
             li.appendChild(span);
         }
         return li;
     };
 
-    re = new FuzzyRegExp(query);
+    const re = new FuzzyRegex(query);
     let nonExactMatches = [];
 
     for (const item of data) {
         const match = re.exec(item);
-        if (match.match === true) {
+        if (match) {
             /* Yield exact matches immediately. */
             if (match.type === "exact") yield makeListElement(match);
             /* Only save moderately fuzzy matches for later yielding, the average length of
              * matched substrings being a measure of fuziness. 1.5 is arbitrary. */
-            else if (match.groups.length < 4
-                || ((query.length
-                     / match.groups.reduce((count, group) => group.match ? count + 1 : count , 0))
-                    > 1.5))
-            {
+            else if (match.matchedGroupCount() < 4 || match.averageMatchedGroupLength() > 1.5) {
                 nonExactMatches.push(match);
             }
         }
