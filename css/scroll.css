@@ -1,0 +1,63 @@
+body {
+  padding: 50px;
+}
+
+.scroll-box {
+  border-radius: 5px;
+  border: 1px solid #e8e8e8;
+  box-shadow: 4px 4px 5px rgba(0,0,0,.05);
+  display: flex;
+  flex-direction: row;
+  height: 300px;
+  margin: 0 auto;
+  max-width: 400px;
+  position: relative;
+}
+
+.scroll-content {
+  flex: 1;
+  overflow-y: scroll;
+  scrollbar-width: none;
+}
+
+.scroll-content::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-content p {
+  margin: 1em;
+}
+
+.scroll-bar {
+  display: block;
+  flex: 0 0 16px;
+  height: 100%;
+  padding: 6px;
+}
+
+.scroll-handle {
+  background-color: #ddd;
+  border-radius: 2px;
+  cursor: grab;
+  display: block;
+  position: relative;
+  top: 0;
+  transition: background-color .1s ease-in;
+  width: 100%;
+}
+
+.scroll-handle:hover {
+  background-color: #d8d8d8;
+}
+
+.scroll-handle:active {
+  background-color: #ccc;
+}
+
+.dragging {
+  background-color: #ccc;
+}
+
+.noselect {
+  user-select: none;
+}

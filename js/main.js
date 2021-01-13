@@ -17,7 +17,7 @@ function* fuzzySieve(data, query) {
         const match = re.exec(item);
         if (match) {
             /* Yield exact matches immediately. */
-            if (match.type === "exact") yield makeListElement(match);
+            if (match.matchType === "exact") yield makeListElement(match);
             /* Only save moderately fuzzy matches for later yielding, the average length of
              * matched substrings being a measure of fuziness. 1.5 is arbitrary. */
             else if (match.matchedGroupCount() < 4 || match.averageMatchedGroupLength() > 1.5) {

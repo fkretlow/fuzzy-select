@@ -36,20 +36,20 @@ class FuzzyRegex {
     }
 
     exec(s) {
-        let type;
+        let matchType;
         let groups;
 
         let result = this.exactRegex.exec(s);
-        if (result) type = "exact";
+        if (result) matchType = "exact";
 
         if (!result && this.multiRegex) {
             result = this.multiRegex.exec(s);
-            if (result) type = "multi";
+            if (result) matchType = "multi";
         }
 
         if (!result) {
             result = this.fuzzyRegex.exec(s);
-            if (result) type = "fuzzy";
+            if (result) matchType = "fuzzy";
             else return null;
         }
 
@@ -78,14 +78,13 @@ class FuzzyRegex {
             i += group.length;
         }
 
-        return new FuzzyRegexMatch(type, groups);
+        return new FuzzyRegexMatch(matchType, groups);
     }
 }
 
-
 class FuzzyRegexMatch {
-    constructor(type, groups) {
-        this.type = type;
+    constructor(matchType, groups) {
+        this.matchType = matchType;
         this.groups = groups;
     }
 
