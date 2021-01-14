@@ -2,12 +2,9 @@ body {
   padding: 50px;
 }
 
-#my-par {
-  margin: 1em;
-}
-
-.scrollable {
+.scroll-root {
   border: 1px solid #e8e8e8;
+  border-radius: 4px;
   box-shadow: 4px 4px 5px rgba(0,0,0,.05);
   height: 300px;
   margin: 0 auto;
@@ -16,17 +13,22 @@ body {
 }
 
 .scroll-container {
-  padding: 6px;
+  padding: .5em .8em;
 }
 
 .scroll-bar {
-  background-color: #f8f8f8;
+  padding: 6px;
   width: 18px;
+  transition: background-color .3s ease-in;
+}
+
+.scroll-bar:hover {
+  background-color: #f8f8f8;
 }
 
 .scroll-handle {
   background-color: #e8e8e8;
-  cursor: grab;
+  border-radius: 3px;
   transition: background-color .1s ease-in;
   width: 100%;
 }
@@ -36,13 +38,15 @@ body {
 }
 
 .scroll-handle:active {
-  background-color: #888; /* This needs to be propageted to .scroll-handle .dragging */
+  background-color: #888;
 }
 
+/* Scrollable structural styles */
 
-.scrollable {
+.scroll-root {
   display: flex;
   flex-direction: row;
+  overflow: hidden;
 }
 
 .scroll-container {
@@ -53,7 +57,6 @@ body {
   height: 100%;
   overflow-y: scroll;
   scrollbar-width: none;
-  /* padding: 1em; */
 }
 
 .scroll-content::-webkit-scrollbar {
@@ -61,22 +64,17 @@ body {
 }
 
 .scroll-bar {
-  display: block;
   flex-grow: 0;
   flex-shrink: 0;
   height: 100%;
 }
 
 .scroll-handle {
-  display: block;
   position: relative;
   top: 0;
 }
 
-.dragging {
-  background-color: #ccc;
-}
-
-.noselect {
+.noselect,
+.noselect * {
   user-select: none;
 }

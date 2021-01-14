@@ -16,16 +16,34 @@ window.addEventListener("resize", () => {
 })
 
 
-class ScrollBox {
-    constructor(root, bar, handle, container, content) {
-        this.root = root;
-        this.bar = bar;
-        this.handle = handle;
-        this.container = container;
-        this.content = content;
+class Scrollable {
+    constructor(node) {
+        this.root = document.createElement("div");
+        this.root.classList.add("scroll-root");
+        this.bar = document.createElement("div");
+        this.bar.classList.add("scroll-bar");
+        this.handle = document.createElement("div");
+        this.handle.classList.add("scroll-handle");
+        this.container = document.createElement("div");
+        this.container.classList.add("scroll-container");
+        this.content = document.createElement("div");
+        this.content.classList.add("scroll-content");
+
+        this.container.appendChild(this.content);
+        this.root.appendChild(this.container);
+        this.bar.appendChild(this.handle);
+        this.root.appendChild(this.bar);
+
+        node.replaceWith(this.root);
+        this.content.appendChild(node);
 
         this.content.addEventListener("scroll", () => { this.scroll(); });
         this.handle.addEventListener("mousedown", () => { this.startDrag(); });
+        this.handle.addEventListener("click", (event) => { event.stopPropagation(); });
+        this.bar.addEventListener("mousedown", () => {
+            this.jump(event);
+            this.startDrag();
+        })
 
         this.position = 0; // scrolling position in percentage, 1 means fully down
         this.resize();
@@ -44,13 +62,29 @@ class ScrollBox {
         this.handleLeeway = this.barInnerHeight - this.handleLength;
     }
 
+    jump(clickEvent) {
+        let offset = clickEvent.offsetY;
+        if (clickEvent.target === this.handle) {
+            offset += this.position * this.handleLeeway;
+        }
+        let pos = (offset - .5 * this.handleLength) / this.handleLeeway;
+        if (pos < 0) this.position = 0;
+        if (pos > 1) this.position = 1;
+        else         this.position = pos;
+        this.content.scroll({
+            left: 0,
+            top: this.position * this.overflow,
+            behavior: "smooth"
+        });
+    }
+
     scroll() {
         this.position = this.content.scrollTop / this.overflow;
         this.handle.style.top = `${this.position * this.handleLeeway}px`;
     }
 
-    drag(event) {
-        this.position += event.movementY / this.handleLeeway;
+    drag(mousemoveEvent) {
+        this.position += mousemoveEvent.movementY / this.handleLeeway;
         if (this.position < 0) this.position = 0;
         if (this.position > 1) this.position = 1;
         this.content.scrollTop = this.position * this.overflow;
@@ -58,12 +92,12 @@ class ScrollBox {
 
     startDrag() {
         DRAG_TARGET = this;
-        this.content.classList.toggle("noselect");
+        this.container.classList.add("noselect");
         this.handle.classList.toggle("dragging");
     }
 
     stopDrag() {
-        this.content.classList.toggle("noselect");
+        this.container.classList.remove("noselect");
         this.handle.classList.toggle("dragging");
     }
 }
@@ -71,11 +105,6 @@ class ScrollBox {
 let scrollBoxes = [];
 
 window.addEventListener("load", () => {
-    let root = document.querySelector(".scrollable");
-    let bar = document.querySelector(".scroll-bar");
-    let handle = document.querySelector(".scroll-handle");
-    let container = document.querySelector(".scroll-container");
-    let content = document.querySelector(".scroll-content");
-
-    scrollBoxes.push(new ScrollBox(root, bar, handle, container, content));
+    let scrollables = document.querySelectorAll(".scrollable");
+    scrollables.forEach(node => { scrollBoxes.push(new Scrollable(node)); });
 });
