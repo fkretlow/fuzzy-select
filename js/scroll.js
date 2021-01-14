@@ -11,50 +11,49 @@ window.addEventListener("mousemove", () => {
     if (DRAG_TARGET) DRAG_TARGET.drag(event);
 });
 
+window.addEventListener("resize", () => {
+    for (let b of scrollBoxes) b.resize();
+})
+
 
 class ScrollBox {
-    constructor(container, bar, handle, content) {
-        this.container = container;
+    constructor(root, bar, handle, container, content) {
+        this.root = root;
         this.bar = bar;
-
-        this.content = content;
-        this.content.addEventListener("scroll", () => { this.scroll(); });
-
         this.handle = handle;
-        this.handle.style.height = this.handleLength() + "px";
+        this.container = container;
+        this.content = content;
+
+        this.content.addEventListener("scroll", () => { this.scroll(); });
         this.handle.addEventListener("mousedown", () => { this.startDrag(); });
 
-        this.position = 0; // scrolling position in percentage, 1 means full
-
+        this.position = 0; // scrolling position in percentage, 1 means fully down
+        this.resize();
     }
 
-    handleLength() {
-        return this.container.clientHeight / this.content.scrollHeight * this.barInnerHeight();
-    }
-
-    barInnerHeight() {
-        let { paddingTop, paddingBottom } = getComputedStyle(this.bar);
-        return this.bar.clientHeight - parseFloat(paddingTop) - parseFloat(paddingBottom);
-    }
-
-    leeway() {
-        return this.barInnerHeight() - this.handleLength();
-    }
-
-    overflow() {
-        return this.content.scrollHeight - this.container.clientHeight;
+    resize() {
+        let containerStyle = getComputedStyle(this.container);
+        this.availableHeight = this.container.clientHeight
+                - (parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom));
+        this.overflow = this.content.scrollHeight - this.availableHeight;
+        let barStyle = getComputedStyle(this.bar);
+        this.barInnerHeight = this.bar.clientHeight
+                - (parseFloat(barStyle.paddingTop) + parseFloat(barStyle.paddingBottom));
+        this.handleLength = this.availableHeight / this.content.scrollHeight * this.barInnerHeight;
+        this.handle.style.height = `${this.handleLength}px`;
+        this.handleLeeway = this.barInnerHeight - this.handleLength;
     }
 
     scroll() {
-        this.position = this.content.scrollTop / this.overflow();
-        this.handle.style.top = this.position * this.leeway() + "px";
+        this.position = this.content.scrollTop / this.overflow;
+        this.handle.style.top = `${this.position * this.handleLeeway}px`;
     }
 
     drag(event) {
-        this.position += event.movementY / this.leeway();
+        this.position += event.movementY / this.handleLeeway;
         if (this.position < 0) this.position = 0;
         if (this.position > 1) this.position = 1;
-        this.content.scrollTop = this.position * this.overflow();
+        this.content.scrollTop = this.position * this.overflow;
     }
 
     startDrag() {
@@ -69,12 +68,14 @@ class ScrollBox {
     }
 }
 
+let scrollBoxes = [];
 
 window.addEventListener("load", () => {
-    let container = document.querySelector(".scroll-box");
+    let root = document.querySelector(".scrollable");
     let bar = document.querySelector(".scroll-bar");
     let handle = document.querySelector(".scroll-handle");
+    let container = document.querySelector(".scroll-container");
     let content = document.querySelector(".scroll-content");
 
-    const handler = new ScrollBox(container, bar, handle, content);
+    scrollBoxes.push(new ScrollBox(root, bar, handle, container, content));
 });

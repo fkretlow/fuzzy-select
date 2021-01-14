@@ -2,56 +2,75 @@ body {
   padding: 50px;
 }
 
-.scroll-box {
-  border-radius: 5px;
+#my-par {
+  margin: 1em;
+}
+
+.scrollable {
   border: 1px solid #e8e8e8;
   box-shadow: 4px 4px 5px rgba(0,0,0,.05);
-  display: flex;
-  flex-direction: row;
   height: 300px;
   margin: 0 auto;
   max-width: 400px;
   position: relative;
 }
 
-.scroll-content {
+.scroll-container {
+  padding: 6px;
+}
+
+.scroll-bar {
+  background-color: #f8f8f8;
+  width: 18px;
+}
+
+.scroll-handle {
+  background-color: #e8e8e8;
+  cursor: grab;
+  transition: background-color .1s ease-in;
+  width: 100%;
+}
+
+.scroll-handle:hover {
+  background-color: #ccc;
+}
+
+.scroll-handle:active {
+  background-color: #888; /* This needs to be propageted to .scroll-handle .dragging */
+}
+
+
+.scrollable {
+  display: flex;
+  flex-direction: row;
+}
+
+.scroll-container {
   flex: 1;
+}
+
+.scroll-content {
+  height: 100%;
   overflow-y: scroll;
   scrollbar-width: none;
+  /* padding: 1em; */
 }
 
 .scroll-content::-webkit-scrollbar {
   display: none;
 }
 
-.scroll-content p {
-  margin: 1em;
-}
-
 .scroll-bar {
   display: block;
-  flex: 0 0 16px;
+  flex-grow: 0;
+  flex-shrink: 0;
   height: 100%;
-  padding: 6px;
 }
 
 .scroll-handle {
-  background-color: #ddd;
-  border-radius: 2px;
-  cursor: grab;
   display: block;
   position: relative;
   top: 0;
-  transition: background-color .1s ease-in;
-  width: 100%;
-}
-
-.scroll-handle:hover {
-  background-color: #d8d8d8;
-}
-
-.scroll-handle:active {
-  background-color: #ccc;
 }
 
 .dragging {
