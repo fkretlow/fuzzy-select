@@ -37,14 +37,21 @@ function* fuzzySieve(data, query) {
 let processes = new Set();
 
 window.addEventListener("load", e => {
+    let spinner = document.createElement("div");
+    spinner.textContent = "loading data...";
+    spinner.classList.add("spinner");
+    document.querySelector("body").prepend(spinner);
+
     ajaxUtils.makeAjaxCall(
         "https://oekobilanz.fkretlow.vercel.app/api?query=processes:format=json", "GET", true
     ).then(json => {
         json.data.forEach(item => {
             processes.add(item.name);
         });
+    }).then(() => {
+        document.querySelector("body").removeChild(spinner);
+        const input = document.querySelector("#select-input");
+        const output = document.querySelector("#select-output");
+        const handler = new FuzzySelect(input, output, processes, fuzzySieve, "select process");
     });
-    const input = document.querySelector("#select-input");
-    const output = document.querySelector("#select-output");
-    const handler = new FuzzySelect(input, output, processes, fuzzySieve, "select process");
 });
